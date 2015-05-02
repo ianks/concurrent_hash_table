@@ -1,8 +1,21 @@
 # ConcurrentHashTable
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/concurrent_hash_table`. To experiment with that code, run `bin/console` for an interactive prompt.
+This is a thread safe hash table implemented using hash bins and a resizable
+array of Mutex locks. The idea is this, each item gets indexed to some bin
+inside of the hash table. The only time there is non-atomic behavior in a hash
+table is when there is contention on an item in the hash table (i.e. multiple
+threads attempting to read or write on one entry). Because of this, it makes
+little sense to lock all reads and writes to the hash table, instead, we only
+lock when there is contention to a hash bin.
 
-TODO: Delete this and the text above, and describe your gem
+To reduce memory consumption, we use arrays in each bin so multiple hashes can
+end up being in the same bin. Anytime we access that bin, we lock the array.
+
+Instead of using a fixed size lock array, we rehash our locks array whenever we
+need to resize the hash table. This makes the implementation scalable because
+as the table grows in size, the probability of any given item colliding with
+another item decreases, and since we are only locking on collisions, so does
+our required amount of locking.
 
 ## Installation
 
@@ -22,7 +35,22 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+To use the concurrent hash table:
+
+```ruby
+threads = []
+hash = ConcurrentHashTable::ConcurrentHashTable.new 20 # <- capacity
+
+128.times do
+  threads << Thread.start do
+    key = SecureRandom.hex
+    val = 'Hello, world!'
+    hash[key] = val
+  end
+end
+
+threads.map(&:join)
+```
 
 ## Development
 
