@@ -1,7 +1,6 @@
 language: ruby
 
-before_script:
-  - gem install concurrent-ruby-ext
+before_install: gem install bundler
 
 script:
   - bundle exec rspec --format documentation --require spec_helper --color
@@ -20,7 +19,7 @@ rvm:
 jdk:
   - oraclejdk8
 
-sudo: true
+sudo: false
 
 matrix:
   allow_failures:
