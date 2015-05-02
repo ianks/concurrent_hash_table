@@ -18,7 +18,7 @@ module ConcurrentHashTable
 
       val = @table[bucket].find { |k, _v| k == key }
 
-      return val.is_a?(Array) ? val[1] : nil
+      return val.is_a?(Array) ? val[1] : val
     ensure
       release key
     end

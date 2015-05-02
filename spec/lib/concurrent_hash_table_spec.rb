@@ -1,5 +1,4 @@
 describe ConcurrentHashTable::ConcurrentHashTable do
-  let(:hash) { ConcurrentHashTable::ConcurrentHashTable.new 20 }
   let(:data) do
     {
       'current_user_url' => 'https://api.legithub.com/user',
@@ -29,6 +28,7 @@ describe ConcurrentHashTable::ConcurrentHashTable do
   describe '[]=' do
     context 'single-threaded' do
       it 'can be pushed to' do
+        hash = ConcurrentHashTable::ConcurrentHashTable.new 20
         data.each { |key, val| hash[key] = val }
         data.each { |key, val| expect(hash[key]).to eq val }
       end
@@ -36,9 +36,10 @@ describe ConcurrentHashTable::ConcurrentHashTable do
 
     context 'multi-threaded' do
       it 'can be pushed to' do
+        hash = ConcurrentHashTable::ConcurrentHashTable.new 20
         threads = []
 
-        8.times do
+        32.times do
           threads << Thread.new do
             data.each { |key, val| hash[key] = val }
             data.each { |key, val| expect(hash[key]).to eq val }
@@ -47,6 +48,53 @@ describe ConcurrentHashTable::ConcurrentHashTable do
 
         threads.each(&:join)
       end
+    end
+  end
+
+  describe 'stress test' do
+    it 'survives ridiculous threaded conditions' do
+      hash = ConcurrentHashTable::ConcurrentHashTable.new 20
+      threads = []
+
+      32.times do
+        threads << Thread.new do
+          expect do
+            200.times do
+              key = SecureRandom.hex
+              val = key
+              hash[key] = val
+
+              expect(hash[key]).to eq val
+            end
+          end.to_not raise_error
+        end
+      end
+
+      threads.each { |t| t.abort_on_exception = true }
+      threads.each(&:join)
+    end
+
+    it 'survives a ton of contention on one bin' do
+      threads = []
+      hash = ConcurrentHashTable::ConcurrentHashTable.new 20
+
+      key = SecureRandom.hex
+      val = key
+
+      128.times do
+        threads << Thread.new do
+          expect do
+            800.times do
+              hash[key] = val
+
+              expect(hash[key]).to eq val
+            end
+          end.to_not raise_error
+        end
+      end
+
+      threads.each { |t| t.abort_on_exception = true }
+      threads.each(&:join)
     end
   end
 end
