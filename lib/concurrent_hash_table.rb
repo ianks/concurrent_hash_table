@@ -14,7 +14,7 @@ module ConcurrentHashTable
     def [](key)
       acquire key
 
-      bucket = index_of key, length: @table.length
+      bucket = index_of key, @table.length
 
       val = @table[bucket].find { |k, _v| k == key }
 
@@ -27,7 +27,7 @@ module ConcurrentHashTable
       acquire key
 
       begin
-        bucket = index_of key, length: @table.length
+        bucket = index_of key, @table.length
 
         unless @table[bucket].include? [key, value]
           result = @table[bucket] << [key, value]
@@ -56,7 +56,7 @@ module ConcurrentHashTable
         end while mark && who != me
 
         old_locks = @locks
-        old_lock = old_locks[index_of x, length: old_locks.length]
+        old_lock = old_locks[index_of x, old_locks.length]
         old_lock.lock
         who, mark = @owner.get
 
@@ -67,7 +67,7 @@ module ConcurrentHashTable
     end
 
     def release(x)
-      @locks[index_of x, length: @locks.length].unlock
+      @locks[index_of x, @locks.length].unlock
     end
 
     def policy
@@ -99,7 +99,7 @@ module ConcurrentHashTable
       @locks.each { |lock| loop while lock.locked? }
     end
 
-    def index_of(x, length:)
+    def index_of(x, length)
       (x.hash % length).abs
     end
 
@@ -108,7 +108,7 @@ module ConcurrentHashTable
 
       old_table.each do |bucket|
         bucket.each do |item|
-          @table[index_of item, length: new_capacity] << item
+          @table[index_of item, new_capacity] << item
         end
       end
     end
